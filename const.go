@@ -80,6 +80,10 @@ const (
 	HEADER_APPID   = "x-appid"
 	HEADER_APPKEY  = "x-appkey"
 	HEADER_CHANNEL = "x-channel"
+	// 读取请求头
+ 	SELF_APPID_KEY = "HTTP_X_APPID" // X-Appid
+ 	SELF_APPKEY_KEY = "HTTP_X_APPKEY"
+ 	SELF_CHANNEL_KEY = "HTTP_X_CHANNEL"
 
 	REGISTER_APPID = "xrpkalflbedhowhju6cqszg0p73zd8qu"
 )

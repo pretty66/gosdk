@@ -409,15 +409,15 @@ func (c *kongClient) Exec(
 		req.Header.Set("Authorization", "Bearer "+c.token)
 	}
 
-	realIp := c.server.GetHeader("x-real-ip")
+	realIp := c.server.GetHeader("HTTP_X_REAL_IP")
 	if realIp != "" {
 		req.Header.Set("x-real-ip", realIp)
 	}
-	traceid := c.server.GetHeader("x-b3-traceid")
-	sampled := c.server.GetHeader("x-b3-sampled")
+	traceid := c.server.GetHeader("HTTP_X_B3_TRACEID")
+	sampled := c.server.GetHeader("HTTP_X_B3_SAMPLED")
 	if traceid != "" && sampled == "1" {
-		req.Header.Set("x-b3-traceid", traceid)
-		req.Header.Set("x-b3-sampled", sampled)
+		req.Header.Set("HTTP_X_B3_TRACEID", traceid)
+		req.Header.Set("HTTP_X_B3_SAMPLED", sampled)
 	}
 
 	resp, err := c.getHttpClient().Do(req)

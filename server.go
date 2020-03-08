@@ -67,7 +67,7 @@ func (server *Server) GetTokenData() (map[string]interface{}, error) {
 
 
 func (server *Server) GetAppId() string {
-	appid := server.header.Get(HEADER_APPID)
+	appid := server.header.Get(SELF_APPID_KEY)
 	if appid != "" {
 		return appid
 	}
@@ -81,7 +81,7 @@ func (server *Server) GetAppId() string {
 }
 
 func (server *Server) GetAppKey() string {
-	appkey := server.header.Get(HEADER_APPKEY)
+	appkey := server.header.Get(SELF_APPKEY_KEY)
 	if appkey != "" {
 		return appkey
 	}
@@ -95,7 +95,7 @@ func (server *Server) GetAppKey() string {
 }
 
 func (server *Server) GetChannel() string {
-	channel := server.header.Get(HEADER_CHANNEL)
+	channel := server.header.Get(SELF_CHANNEL_KEY)
 	if channel != "" {
 		return channel
 	}

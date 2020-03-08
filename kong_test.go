@@ -9,11 +9,13 @@ import (
 var testClient Client
 
 func init() {
+	// 代码中添加kong代理地址，手动指定使用kong网关
 	err = cienv.SetEnv(GATEWAY_SERVICE_KEY, "kong:http://127.0.0.1:13800")
 	if err != nil {
 		panic(err)
 	}
 	testClient, err = GetClientInstance(nil)
+	// 应用则指定自身
 	err = testClient.SetAppInfo("app", "4c2561d1fee443b88b6a9acdbfa0eb36", "2", "")
 	if err != nil {
 		panic(err)
