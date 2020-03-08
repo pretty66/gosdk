@@ -2,6 +2,7 @@ package gosdk
 
 
 import (
+	"encoding/json"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/pretty66/gosdk/errno"
 	"net/http"
@@ -32,6 +33,19 @@ func GetServerInstance(header http.Header) (Server, error) {
 	return server, nil
 }
 
+func (server *Server) SetToken(token string) error {
+	if token != "" {
+		server.token, _ = jwt.Parse(token, func(token *jwt.Token) (i interface{}, e error) {
+			return token, nil
+		})
+		if _, ok := server.token.Claims.(jwt.MapClaims); ok {
+			server.tokenExist = true
+		} else {
+			return errno.TOKEN_INVALID
+		}
+	}
+	return nil
+}
 
 func (server *Server) GetTokenData() (map[string]interface{}, error) {
 	if server.token == nil {
@@ -53,7 +67,7 @@ func (server *Server) GetTokenData() (map[string]interface{}, error) {
 
 
 func (server *Server) GetAppId() string {
-	appid := server.header.Get(TO_APPID_KEY)
+	appid := server.header.Get(HEADER_APPID)
 	if appid != "" {
 		return appid
 	}
@@ -67,7 +81,7 @@ func (server *Server) GetAppId() string {
 }
 
 func (server *Server) GetAppKey() string {
-	appkey := server.header.Get(TO_APPKEY_KEY)
+	appkey := server.header.Get(HEADER_APPKEY)
 	if appkey != "" {
 		return appkey
 	}
@@ -81,7 +95,7 @@ func (server *Server) GetAppKey() string {
 }
 
 func (server *Server) GetChannel() string {
-	channel := server.header.Get(TO_CHANNEL)
+	channel := server.header.Get(HEADER_CHANNEL)
 	if channel != "" {
 		return channel
 	}
@@ -139,20 +153,22 @@ func (server *Server) GetFromAppKey() string {
 	}
 	return ""
 }
+
 func (server *Server) GetFromChannel() string {
 	if server.token != nil {
-		fromChannel, err := server.token.Claims.(jwt.MapClaims)[TO_CHANNEL].(string)
-		if err {
+		fromChannel, ok := server.token.Claims.(jwt.MapClaims)[FROM_CHANNEL_KEY].(string)
+		if ok {
 			return fromChannel
 		}
-		channelFloat, err := server.token.Claims.(jwt.MapClaims)[TO_CHANNEL].(float64)
-		if err {
+		channelFloat, ok := server.token.Claims.(jwt.MapClaims)[FROM_CHANNEL_KEY].(float64)
+		if ok {
 			fromChannel = strconv.FormatFloat(channelFloat, 'f', 0, 64)
 			return fromChannel
 		}
 	}
 	return ""
 }
+
 func (server *Server) GetFromAppId() string {
 	if server.token != nil {
 		fromAppid, err := server.token.Claims.(jwt.MapClaims)[FROM_APPID_KEY].(string)
@@ -165,10 +181,20 @@ func (server *Server) GetFromAppId() string {
 
 func (server *Server) GetCallStack() []map[string]string {
 	if server.token != nil {
-		callStack, err := server.token.Claims.(jwt.MapClaims)[CALL_STACK_KEY].([]map[string]string)
-		if err {
-			return callStack
+		callStack, ok := server.token.Claims.(jwt.MapClaims)[CALL_STACK_KEY]
+		if !ok {
+			return []map[string]string{}
 		}
+		b, err := json.Marshal(callStack)
+		if err != nil {
+			return []map[string]string{}
+		}
+		var out []map[string]string
+		err = json.Unmarshal(b, &out)
+		if err != nil {
+			return []map[string]string{}
+		}
+		return out
 	}
 	return []map[string]string{}
 }

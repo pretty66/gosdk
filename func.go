@@ -42,8 +42,6 @@ func Zipkin_timestamp() string {
 	return strconv.FormatInt(localTime/1000, 10)
 }
 
-
-
 func NewMd5(str ...string) string {
 	h := md5.New()
 	for _, v := range str {
@@ -66,25 +64,38 @@ func In_array(s string, slice []string) bool {
 	return false
 }
 
-func FormatChains(chains []map[string]string) []map[string]string {
-	out := make([]map[string]string, len(chains))
-	for k, v := range chains {
-		out[k] = map[string]string{
-			"appid":   v["appid"],
-			"appkey":  v["appkey"],
-			"channel": v["channel"],
-		}
-		if k != 0 {
-			alias, ok := v["alias"]
-			if !ok {
-				alias, ok = v["channelAlias"]
-			}
-			out[k]["alias"] = alias
-		}
-	}
-	return out
+type chain struct {
+	Appid   string      `json:"appid"`
+	Appkey  string      `json:"appkey"`
+	Channel interface{} `json:"channel"`
+	Alias   string      `json:"alias,omitempty"`
 }
 
+func FormatChains(chains []map[string]string) []chain {
+	chainData := make([]chain, len(chains))
+	for k, v := range chains {
+		if k == 0 {
+			// channel string
+			chainData[k] = chain{
+				Appid:   v["appid"],
+				Appkey:  v["appkey"],
+				Channel: v["channel"],
+			}
+		} else {
+			var ok bool
+			chainData[k] = chain{
+				Appid:  v["appid"],
+				Appkey: v["appkey"],
+			}
+			chainData[k].Channel, _ = strconv.Atoi(v["channel"])
+			chainData[k].Alias, ok = v["alias"]
+			if !ok {
+				chainData[k].Alias, ok = v["channelAlias"]
+			}
+		}
+	}
+	return chainData
+}
 
 func IsFileExist(path string) bool {
 	_, err := os.Stat(path)
@@ -98,13 +109,13 @@ func IsFileExist(path string) bool {
 
 func FileGetContents(path string) (out []byte, err error) {
 	if IsFileExist(path) {
-		out, err =  ioutil.ReadFile(path)
+		out, err = ioutil.ReadFile(path)
 	}
 	return
 }
 
 func FilePutContents(path string, content []byte) error {
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0777)
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0777)
 	if err != nil {
 		return err
 	}
@@ -115,7 +126,6 @@ func FilePutContents(path string, content []byte) error {
 	}
 	return nil
 }
-
 
 func requestError(response *http.Response) error {
 	switch response.StatusCode {

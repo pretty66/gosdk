@@ -70,7 +70,7 @@ const USER_INFO_KEY = "user_info"
 
 const CALL_STACK_KEY = "call_stack"
 
-const DEFAULT_CHANNEL_ALIAS = "default"
+const DEFAULT_CHANNEL_ALIAS = "test"
 
 const ISS = "ItfarmGoSdk"
 

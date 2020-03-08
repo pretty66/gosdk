@@ -36,10 +36,17 @@ type oldClient struct {
 	currentInfo     map[string]string
 	inited          bool
 	proxy           string
+	server          Server
 }
 
 func NewOldClient(header http.Header) (Client, error) {
-	client := &oldClient{}
+	client := &oldClient{
+		baseAccountInfo: map[string]string{},
+		callStacks:      []map[string]string{},
+		targetInfo:      map[string]string{},
+		currentInfo:     map[string]string{},
+		services:        map[string]string{},
+	}
 	err = client.initProxy()
 	if err != nil {
 		return nil, err
@@ -63,63 +70,42 @@ func (c *oldClient) initProxy() error {
 }
 
 func (client *oldClient) ParseTokenInfo(header http.Header) error {
-	server, err := GetServerInstance(header)
-	client.header = header
+	client.server, err = GetServerInstance(header)
 	if err != nil {
 		return err
 	}
-	if server.tokenExist {
-		claim, err := server.GetTokenData()
+	client.header = header
+
+	if client.server.tokenExist {
+		/*claim, err := server.GetTokenData()
 		if err != nil {
 			return err
-		}
-		err1 := client.parseClaims(claim)
+		}*/
+		err1 := client.parseClaims()
 		client.inited = true
 		return err1
 	}
 	return nil
 }
 
-func (client *oldClient) parseClaims(claim map[string]interface{}) error {
-	var flag = false
-	if value, ok := claim[TO_APPID_KEY]; fmt.Sprintf("%T", value) == "string" && ok {
-		if value, ok := claim[TO_APPKEY_KEY]; fmt.Sprintf("%T", value) == "string" && ok {
-			if value, ok := claim[TO_CHANNEL]; fmt.Sprintf("%T", value) == "string" && ok {
-				client.currentInfo["appid"] = claim[TO_APPID_KEY].(string)
-				client.currentInfo["appkey"] = claim[TO_APPKEY_KEY].(string)
-				client.currentInfo["channel"] = claim[TO_CHANNEL].(string)
-				flag = true
-			} else if value, ok := claim[TO_CHANNEL]; fmt.Sprintf("%T", value) == "float64" && ok {
-				client.currentInfo["appid"] = claim[TO_APPID_KEY].(string)
-				client.currentInfo["appkey"] = claim[TO_APPKEY_KEY].(string)
-				client.currentInfo["channel"] = strconv.FormatFloat(claim[TO_CHANNEL].(float64), 'f', 0, 64)
-				flag = true
-			}
-		}
+func (c *oldClient) parseClaims() error {
+	if c.currentInfo["appid"] == "" {
+		c.currentInfo["appid"] = c.server.GetAppId()
 	}
-	if !flag {
-		return errno.TOKEN_INVALID.Add("The token is not valid")
+	if c.currentInfo["appkey"] == "" {
+		c.currentInfo["appkey"] = c.server.GetAppKey()
 	}
-	if value, ok := claim[CALL_STACK_KEY]; fmt.Sprintf("%T", value) == "[]map[string]string" && ok {
-		client.callStacks = claim[CALL_STACK_KEY].([]map[string]string)
+	if c.currentInfo["channel"] == "" {
+		c.currentInfo["channel"] = c.server.GetChannel()
 	}
-	if value, ok := claim[ACCOUNT_ID_KEY]; fmt.Sprintf("%T", value) == "string" && ok {
-		client.accountId = claim[ACCOUNT_ID_KEY].(string)
-	}
-	if value, ok := claim[SUB_ORG_KEY_KEY]; fmt.Sprintf("%T", value) == "string" && ok {
-		client.subOrgKey = claim[SUB_ORG_KEY_KEY].(string)
-	}
-	if value, ok := claim[USER_INFO_KEY]; fmt.Sprintf("%T", value) == "map[string]string" && ok {
 
-		if client.IsCallerApp() {
-			if claim[USER_INFO_KEY].(map[string]string)["name"] != "" {
-				client.baseAccountInfo["name"] = claim[USER_INFO_KEY].(map[string]string)["name"]
-			}
-			if claim[USER_INFO_KEY].(map[string]string)["avatar"] != "" {
-				client.baseAccountInfo["avatar"] = claim[USER_INFO_KEY].(map[string]string)["avatar"]
-			}
-		}
+	if c.currentInfo["appid"] == "" || c.currentInfo["appkey"] == "" || c.currentInfo["channel"] == "" {
+		return errno.REQUEST_HEADER_ERROR
 	}
+	c.callStacks = c.server.GetCallStack()
+	c.accountId = c.server.GetAccountId()
+	c.subOrgKey = c.server.GetSubOrgKey()
+	c.baseAccountInfo = c.server.GetUserInfo()
 	return nil
 }
 
@@ -179,12 +165,16 @@ func (client *oldClient) SetToken(tokenString string) error {
 		isTokenIssuer = true
 	}
 	if isTokenIssuer && getSigner().Verify(tokenString, token.Signature, client.appSecret) == nil {
-		originClaims := token.Claims.(jwt.MapClaims)
+		/*originClaims := token.Claims.(jwt.MapClaims)
 		claims := make(map[string]interface{})
 		for k, v := range originClaims {
 			claims[k] = v
+		}*/
+		err = client.server.SetToken(tokenString)
+		if err != nil {
+			return err
 		}
-		err := client.parseClaims(claims)
+		err := client.parseClaims()
 		client.isTokenIssuer = true
 		client.inited = true
 		return err
@@ -642,8 +632,7 @@ func (client *oldClient) makeTokenByChain(claims MyClaimsForChainRequest) {
 
 func (client oldClient) MakeTokenByChain(claims MyClaimsForChainRequest) string {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	result, err := token.SignedString([]byte(""))
-	fmt.Println(err)
+	result, _ := token.SignedString([]byte(""))
 	return result
 }
 

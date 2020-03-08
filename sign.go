@@ -1,6 +1,8 @@
 package gosdk
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 func MakeService(appId, appKey, channel string) string {
 	return NewMd5(appId, appKey, channel)
@@ -22,12 +24,8 @@ func MakeSecret(fromAppId, fromAppKey, fromChannel string) string {
 	return NewImplodeMd5("__", fromAppId, fromAppKey, fromChannel)
 }
 
-func MakeChains(chains []map[string]string) string {
+
+func MakeChains(chains []chain) string {
 	b, _ := json.Marshal(chains)
 	return NewMd5(string(b))
 }
-
-
-
-
-

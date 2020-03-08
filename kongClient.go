@@ -14,7 +14,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -46,7 +45,10 @@ type kongClient struct {
 }
 
 func NewKongClient(header http.Header) (Client, error) {
-	client := &kongClient{}
+	client := &kongClient{
+		baseAccountInfo: map[string]string{},
+		callStacks:      []map[string]string{},
+	}
 
 	err = client.initProxy()
 	if err != nil {
@@ -85,11 +87,11 @@ func (c *kongClient) ParseTokenInfo(head http.Header) error {
 		return err
 	}
 	if c.server.tokenExist {
-		claims, err := c.server.GetTokenData()
+		/*claims, err := c.server.GetTokenData()
 		if err != nil {
 			return err
-		}
-		err = c.parseClaims(claims)
+		}*/
+		err = c.parseClaims()
 		if err != nil {
 			return err
 		}
@@ -99,46 +101,24 @@ func (c *kongClient) ParseTokenInfo(head http.Header) error {
 	return nil
 }
 
-func (c *kongClient) parseClaims(claims map[string]interface{}) error {
-	var ok bool
-	if _, ok = claims[TO_APPID_KEY]; ok {
-		c.currentInfo.appId, ok = claims[TO_APPID_KEY].(string)
+func (c *kongClient) parseClaims() error {
+	if c.currentInfo.appId == "" {
+		c.currentInfo.appId = c.server.GetAppId()
 	}
-	if _, ok = claims[TO_APPKEY_KEY]; ok {
-		c.currentInfo.appKey, ok = claims[TO_APPKEY_KEY].(string)
+	if c.currentInfo.appKey == "" {
+		c.currentInfo.appKey = c.server.GetAppKey()
 	}
-	if _, ok = claims[TO_CHANNEL]; ok {
-		c.currentInfo.channel, ok = claims[TO_CHANNEL].(string)
-		if !ok {
-			if ch, ok := claims[TO_CHANNEL].(float64); ok {
-				c.currentInfo.channel = strconv.FormatFloat(ch, 'f', 0, 64)
-			}
-		}
+	if c.currentInfo.channel == "" {
+		c.currentInfo.channel = c.server.GetChannel()
 	}
 
 	if c.currentInfo.appId == "" || c.currentInfo.appKey == "" || c.currentInfo.channel == "" {
 		return errno.REQUEST_HEADER_ERROR
 	}
-	if value, ok := claims[CALL_STACK_KEY]; fmt.Sprintf("%T", value) == "[]map[string]string" && ok {
-		c.callStacks = claims[CALL_STACK_KEY].([]map[string]string)
-	}
-	if value, ok := claims[ACCOUNT_ID_KEY]; fmt.Sprintf("%T", value) == "string" && ok {
-		c.accountId = claims[ACCOUNT_ID_KEY].(string)
-	}
-	if value, ok := claims[SUB_ORG_KEY_KEY]; fmt.Sprintf("%T", value) == "string" && ok {
-		c.subOrgKey = claims[SUB_ORG_KEY_KEY].(string)
-	}
-	if value, ok := claims[USER_INFO_KEY]; fmt.Sprintf("%T", value) == "map[string]string" && ok {
-
-		if c.IsCallerApp() {
-			if claims[USER_INFO_KEY].(map[string]string)["name"] != "" {
-				c.baseAccountInfo["name"] = claims[USER_INFO_KEY].(map[string]string)["name"]
-			}
-			if claims[USER_INFO_KEY].(map[string]string)["avatar"] != "" {
-				c.baseAccountInfo["avatar"] = claims[USER_INFO_KEY].(map[string]string)["avatar"]
-			}
-		}
-	}
+	c.callStacks = c.server.GetCallStack()
+	c.accountId = c.server.GetAccountId()
+	c.subOrgKey = c.server.GetSubOrgKey()
+	c.baseAccountInfo = c.server.GetUserInfo()
 	return nil
 }
 
@@ -418,7 +398,6 @@ func (c *kongClient) Exec(
 	contentType string,
 	file *fileStruct,
 ) (out []byte, err error) {
-	fmt.Println(method, reqUrl)
 	req, err := c.parseBody(method, reqUrl, data, contentType, file)
 	if err != nil {
 		return
@@ -430,12 +409,12 @@ func (c *kongClient) Exec(
 		req.Header.Set("Authorization", "Bearer "+c.token)
 	}
 
-	realIp := c.server.header.Get("x-real-ip")
+	realIp := c.server.GetHeader("x-real-ip")
 	if realIp != "" {
 		req.Header.Set("x-real-ip", realIp)
 	}
-	traceid := c.server.header.Get("x-b3-traceid")
-	sampled := c.server.header.Get("x-b3-sampled")
+	traceid := c.server.GetHeader("x-b3-traceid")
+	sampled := c.server.GetHeader("x-b3-sampled")
 	if traceid != "" && sampled == "1" {
 		req.Header.Set("x-b3-traceid", traceid)
 		req.Header.Set("x-b3-sampled", sampled)
@@ -504,7 +483,7 @@ func (c *kongClient) CallByChain(
 	files *fileStruct,
 ) (out []byte, err error) {
 	// chain 之前需要初始化，setAppInfo
-	if !c.isInit || !c.IsCallerApp() {
+	if !c.isInit {
 		err = errno.SDK_NOT_INITED
 		return
 	}
@@ -516,22 +495,25 @@ func (c *kongClient) CallByChain(
 		err = errno.CHAIN_INVALID
 		return
 	}
-	chains = FormatChains(chains)
-	targetAppId := chains[len(chains)-1]["appid"]
-	targetChannelAlias := MakeChains(chains)
+	chainData := FormatChains(chains)
+	targetAppId := chainData[len(chainData)-1].Appid
+	targetChannelAlias := MakeChains(chainData)
 	// 验证是否第一次调用，去注册中心注册调用关系
-	err = c.checkIsFirstRequest(chains, targetChannelAlias)
+	err = c.checkIsFirstRequest(chainData, targetChannelAlias)
 	if err != nil {
 		return
 	}
 	// 请求链接
 	api = c.makeUrl(targetAppId, targetChannelAlias, api)
 	// token中只有自身和目标服务
-
+	claims := c.claimsForThisRequest()
+	// 编译token
+	c.token = c.MakeToken(claims, 60)
+	out, err = c.Exec(method, api, data, contentType, files)
 	return
 }
 
-func (c *kongClient) checkIsFirstRequest(chains []map[string]string, hashStr string) error {
+func (c *kongClient) checkIsFirstRequest(chains []chain, hashStr string) error {
 	if _cache.Get(hashStr) != "" {
 		return nil
 	}
@@ -561,8 +543,15 @@ func (c *kongClient) checkIsFirstRequest(chains []map[string]string, hashStr str
 			}
 		}
 	}
-	data := map[string]interface{}{
-		"chains": chains,
+	// todo 暂时无法保证map顺序
+	data := map[string]interface{}{}
+	for k, v := range chains {
+		data[fmt.Sprintf("chains[%d][appid]", k)] = v.Appid
+		data[fmt.Sprintf("chains[%d][appkey]", k)] = v.Appkey
+		data[fmt.Sprintf("chains[%d][channel]", k)] = v.Channel
+		if v.Alias != "" {
+			data[fmt.Sprintf("chains[%d][alias]", k)] = v.Alias
+		}
 	}
 	// 没有已经缓存的记录则查询注册中心
 	api := "main.php/json/deploy/checkHostByChain"
@@ -576,7 +565,7 @@ func (c *kongClient) checkIsFirstRequest(chains []map[string]string, hashStr str
 		return errno.JSON_ERROR.Add(err.Error())
 	}
 	state, ok := out["state"]
-	if ok && state.(int) != 1 {
+	if ok && state.(float64) != 1 {
 		return errno.CHAIN_INVALID.Add(out["msg"].(string))
 	}
 	_cache.Set(hashStr, "1", 0)
@@ -639,12 +628,19 @@ func (client *kongClient) SetToken(tokenString string) error {
 		isTokenIssuer = true
 	}
 	if isTokenIssuer && getSigner().Verify(tokenString, token.Signature, client.secret) == nil {
-		originClaims := token.Claims.(jwt.MapClaims)
+		/*originClaims := token.Claims.(jwt.MapClaims)
 		claims := make(map[string]interface{})
 		for k, v := range originClaims {
 			claims[k] = v
+		}*/
+		err = client.server.SetToken(tokenString)
+		if err != nil {
+			return err
 		}
-		err := client.parseClaims(claims)
+		err := client.parseClaims()
+		if err != nil {
+			return err
+		}
 		client.isInit = true
 		return err
 	}
