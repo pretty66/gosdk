@@ -2,7 +2,7 @@ package gosdk
 
 import (
 	"fmt"
-	"gosdk/cienv"
+	"github.com/pretty66/gosdk/cienv"
 	"testing"
 )
 

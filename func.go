@@ -3,7 +3,7 @@ package gosdk
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"gosdk/errno"
+	"github.com/pretty66/gosdk/errno"
 	"io/ioutil"
 	"net/http"
 	"os"

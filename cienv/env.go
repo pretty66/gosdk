@@ -2,7 +2,7 @@ package cienv
 
 import (
 	"fmt"
-	"gosdk/cache"
+	"github.com/pretty66/gosdk/cache"
 	"io/ioutil"
 	"os"
 )

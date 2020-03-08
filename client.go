@@ -1,8 +1,8 @@
 package gosdk
 
 import (
-	"gosdk/cache"
-	"gosdk/cienv"
+	"github.com/pretty66/gosdk/cache"
+	"github.com/pretty66/gosdk/cienv"
 	"net/http"
 	"strings"
 	"time"

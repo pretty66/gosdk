@@ -3,7 +3,7 @@ package gosdk
 
 import (
 	"github.com/dgrijalva/jwt-go"
-	"gosdk/errno"
+	"github.com/pretty66/gosdk/errno"
 	"net/http"
 	"strconv"
 )

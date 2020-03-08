@@ -69,4 +69,6 @@ var (
 	REQUEST_SETING_ERROR     = &Errno{1208, "request seting error"}
 	JSON_ERROR               = &Errno{1209, "json error"}
 	CHAIN_INVALID            = &Errno{1210, "The chain does not match the caller info"}
+	UPLOAD_FILE_ERROR        = &Errno{1211, "upload file error"}
+	UPLOAD_ENCOUNTER_ERROR   = &Errno{1212, "upload encounter error"}
 )
