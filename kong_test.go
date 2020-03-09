@@ -113,3 +113,12 @@ func TestGetServerInstance(t *testing.T) {
 	fmt.Println(server.GetFromAppKey())
 	fmt.Println(server.GetFromChannel())
 }
+
+func TestGetAppInfoByToken(t *testing.T) {
+	token := `eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJJdGZhcm1QaHBTZGsiLCJpYXQiOjE1NjI5MTYyMzUsIm5iZiI6MTU2MjkxNjIzNSwiZXhwIjoxNTYyOTE2Mjk1LCJhY2NvdW50X2lkIjoiMDMxNzYyOGYwMTYwNDE2NmI1NWFlOGQ3OGVjNmRkNjAiLCJhcHBrZXkiOiI0YzI1NjFkMWZlZTQ0M2I4OGI2YTlhY2RiZmEwZWIzNiIsImFwcGlkIjoiYXBwIiwiY2hhbm5lbCI6IjIiLCJzdWJfb3JnX2tleSI6IjAiLCJ1c2VyX2luZm8iOltdLCJjYWxsX3N0YWNrIjpbXX0.s_2uYmOzVZGP6cHKMJbIN-85TljPLPIU7vNhGQXK21g`
+	res, err := GetAppInfoByToken(token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(res)
+}
