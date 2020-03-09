@@ -3,10 +3,12 @@ package gosdk
 import (
 	"fmt"
 	"github.com/pretty66/gosdk/cienv"
+	"net/http"
 	"testing"
 )
 
 var testClient Client
+var _header http.Header
 
 func init() {
 	// 代码中添加kong代理地址，手动指定使用kong网关
@@ -14,7 +16,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	testClient, err = GetClientInstance(nil)
+	testClient, err = GetClientInstance(_header)
 	// 应用则指定自身
 	err = testClient.SetAppInfo("app", "4c2561d1fee443b88b6a9acdbfa0eb36", "2", "")
 	if err != nil {
@@ -24,7 +26,7 @@ func init() {
 
 func TestKongClient_Call(t *testing.T) {
 
-	res ,err := testClient.Call("call_service", "get", "/", map[string]interface{}{"asd":"qwe"}, "test", CONTENT_TYPE_FORM, nil)
+	res ,err := testClient.Call("server1", "get", "/upload.php", map[string]interface{}{"asd":"qwe"}, "test", CONTENT_TYPE_FORM, nil)
 	if err != nil {
 		fmt.Printf("%#v", err)
 		return
@@ -95,4 +97,19 @@ func TestKongClient_UploadFile(t *testing.T) {
 		return
 	}
 	fmt.Println(string(res))
+}
+
+
+func TestGetServerInstance(t *testing.T) {
+	server, err := GetServerInstance(_header)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(server.GetAppId())
+	fmt.Println(server.GetAppKey())
+	fmt.Println(server.GetAccountId())
+	fmt.Println(server.GetCallStack())
+	fmt.Println(server.GetFromAppId())
+	fmt.Println(server.GetFromAppKey())
+	fmt.Println(server.GetFromChannel())
 }

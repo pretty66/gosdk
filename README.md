@@ -27,7 +27,7 @@ go mod vendor
  - github.com/dgrijalva/jwt-go
  
 ### 基本使用
-- 具体使用案参考 [kong_test.go](https://github.com/pretty66/gosdk/blob/master/kong_test.go)
+- 具体使用案例参考 [kong_test.go](https://github.com/pretty66/gosdk/blob/master/kong_test.go)
 - sdk内部根据环境变量 GATEWAY_HOST_SERVICE 判断使用走kong网关还是原先网关
 - 可手动在代码中指定网关
 ```go
@@ -37,6 +37,7 @@ cienv.SetEnv("GATEWAY_HOST_SERVICE", "kong:http://127.0.0.1:13800")
 // 老网关
 cienv.SetEnv("GATEWAY_HOST_SERVICE", "https://super-gateway.prod1.oneitfarm.com/index.php/")
 ```
+#### client 使用方法
 ```go
 // 获取对象，head是请求的HEAD字段，用来解析HEAD中的Authorization中的token
 client, err := gosdk.GetClientInstance(head)
@@ -61,4 +62,17 @@ client = client.SetServices(services)
 // file是上传文件时使用，一般为nil。
 resp, err1 = client.Call(serviceKey, method, api, params, alias, contentType, file)
 ```
-
+#### server 使用方法
+```go
+server, err := GetServerInstance(_header)
+if err != nil {
+    t.Fatal(err)
+}
+fmt.Println(server.GetAppId())
+fmt.Println(server.GetAppKey())
+fmt.Println(server.GetAccountId())
+fmt.Println(server.GetCallStack())
+fmt.Println(server.GetFromAppId())
+fmt.Println(server.GetFromAppKey())
+fmt.Println(server.GetFromChannel())
+```

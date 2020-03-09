@@ -646,3 +646,8 @@ func (client *kongClient) SetToken(tokenString string) error {
 	}
 	return nil
 }
+
+
+func (c *kongClient) GetServer() Server {
+	return c.server
+}

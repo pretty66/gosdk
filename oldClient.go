@@ -674,3 +674,7 @@ func (client *oldClient) UploadFile(serviceName string,
 	}
 	return client.Call(serviceName, "POST", api, data, channelAlias, CONTENT_TYPE_MULTIPART, files)
 }
+
+func (c *oldClient) GetServer() Server {
+	return c.server
+}

@@ -47,6 +47,7 @@ type Client interface {
 	ParseTokenInfo(head http.Header) error
 	initProxy() error
 	ReInitCurrentTokenWithSeconds(s int64) string
+	GetServer() Server
 }
 
 var _cache *cache.Cache
