@@ -1,6 +1,8 @@
 package gosdk
 
 import (
+	"github.com/dgrijalva/jwt-go"
+	"github.com/pretty66/gosdk/errno"
 	"net/http"
 	"strings"
 )
@@ -28,19 +30,22 @@ func getAuthorizationHeader(header http.Header) (headers string) {
 	return headers
 }
 
-/*func GetAppInfoByToken(tokenString string) (map[string]interface{}, *CommError) {
+func GetAppInfoByToken(tokenString string) (map[string]interface{}, error) {
 	if tokenString == "" {
-		return nil,&CommError{204,"token is empty"}
+		return nil, errno.TOKEN_INVALID.Add("token is empty")
 	}
 	token, _ := jwt.Parse(tokenString, func(token *jwt.Token) (i interface{}, e error) {
 		return token, nil
 	})
+
 	if claims, ok := token.Claims.(jwt.MapClaims); ok {
-		tokenData = make(map[string]interface{})
+		tokenData := make(map[string]interface{})
 		for key, value := range claims {
 			tokenData[key] = value
 		}
-		return tokenData,nil
+		return tokenData, nil
 	}
-	return nil,&CommError{204,"token format claim error"}
-}*/
+	return nil, errno.TOKEN_INVALID.Add("token format claim error")
+}
+
+
