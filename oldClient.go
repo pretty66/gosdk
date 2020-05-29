@@ -37,6 +37,7 @@ type oldClient struct {
 	inited          bool
 	proxy           string
 	server          Server
+	superAccountId  string
 }
 
 func NewOldClient(header http.Header) (Client, error) {
@@ -106,6 +107,7 @@ func (c *oldClient) parseClaims() error {
 	c.accountId = c.server.GetAccountId()
 	c.subOrgKey = c.server.GetSubOrgKey()
 	c.baseAccountInfo = c.server.GetUserInfo()
+	c.superAccountId = c.server.GetSuperAdmin()
 	return nil
 }
 
@@ -145,6 +147,14 @@ func (client *oldClient) IsCallerApp() bool {
 func (client *oldClient) SetConnectTimeout(timeout time.Duration) error {
 	client.connectTimeout = timeout
 	return nil
+}
+
+func (c *oldClient) SetAsSuperAdmin() {
+	c.superAccountId = SUPER_ADMIN_ACCOUNT_ID
+}
+
+func (c *oldClient) GetSuperAdmin() string {
+	return c.server.GetSuperAdmin()
 }
 
 func (client *oldClient) SetTimeout(timeOut time.Duration) error {
@@ -215,11 +225,14 @@ func generateStackRow(appid, appkey, channel, alias, version string) map[string]
 // 生成一个指定时间过期的token
 func (c *oldClient) ReInitCurrentTokenWithSeconds(seconds int64) string {
 	claims := MyClaimsForRequest{
-		Appid:     c.currentInfo["appid"],
-		Appkey:    c.currentInfo["appkey"],
-		Channel:   c.currentInfo["channel"],
-		SubOrgKey: c.subOrgKey,
-		CallStack: c.callStacks,
+		Appid:          c.currentInfo["appid"],
+		Appkey:         c.currentInfo["appkey"],
+		Channel:        c.currentInfo["channel"],
+		SubOrgKey:      c.subOrgKey,
+		AccountId:      c.accountId,
+		SuperAccountId: c.superAccountId,
+		UserInfo:       c.baseAccountInfo,
+		CallStack:      c.callStacks,
 	}
 	return c.MakeToken(claims, seconds)
 }
@@ -330,6 +343,7 @@ func (client *oldClient) claimsForThisRequest() MyClaimsForRequest {
 		client.subOrgKey,
 		client.baseAccountInfo,
 		client.generateStackRecord(),
+		client.superAccountId,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Unix() + 60,
 			Issuer:    "ItfarmGoSdk",
@@ -616,6 +630,7 @@ func (client *oldClient) claimsForChainRequest(stack map[string]string) MyClaims
 		client.subOrgKey,
 		client.baseAccountInfo,
 		append(client.callStacks, stack),
+		client.superAccountId,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Unix() + 60,
 			Issuer:    "ItfarmGoSdk",

@@ -141,3 +141,15 @@ func requestError(response *http.Response) error {
 		return errno.RESPONSE_OTHER.SetCode(response.StatusCode, string(body))
 	}
 }
+
+func GetInterfaceString(param interface{}) string {
+	switch param.(type) {
+	case string:
+		return param.(string)
+	case int:
+		return strconv.Itoa(param.(int))
+	case float64:
+		return strconv.Itoa(int(param.(float64)))
+	}
+	return ""
+}

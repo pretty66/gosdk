@@ -48,6 +48,8 @@ type Client interface {
 	initProxy() error
 	ReInitCurrentTokenWithSeconds(s int64) string
 	GetServer() Server
+	GetSuperAdmin() string
+	SetAsSuperAdmin()
 }
 
 var _cache *cache.Cache

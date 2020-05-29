@@ -72,6 +72,9 @@ const CALL_STACK_KEY = "call_stack"
 
 const DEFAULT_CHANNEL_ALIAS = "test"
 
+const SUPER_ACCOUNT_ID_KEY = "super_account_id"
+
+const SUPER_ADMIN_ACCOUNT_ID = "SUPER_ADMIN_ACCOUNT_ID"
 const ISS = "ItfarmGoSdk"
 
 const (
@@ -94,24 +97,26 @@ type fileStruct struct {
 }
 
 type MyClaimsForRequest struct {
-	FromAppid   string              `json:"from_appid"`
-	FromAppkey  string              `json:"from_appkey"`
-	FromChannel string              `json:"from_channel"`
-	Appid       string              `json:"appid"`
-	Appkey      string              `json:"appkey"`
-	Channel     string              `json:"channel"`
-	Alias       string              `json:"alias"`
-	AccountId   string              `json:"account_id"`
-	SubOrgKey   string              `json:"sub_org_key"`
-	UserInfo    map[string]string   `json:"user_info"`
-	CallStack   []map[string]string `json:"call_stack"`
+	FromAppid      string              `json:"from_appid"`
+	FromAppkey     string              `json:"from_appkey"`
+	FromChannel    string              `json:"from_channel"`
+	Appid          string              `json:"appid"`
+	Appkey         string              `json:"appkey"`
+	Channel        string              `json:"channel"`
+	Alias          string              `json:"alias"`
+	AccountId      string              `json:"account_id"`
+	SubOrgKey      string              `json:"sub_org_key"`
+	UserInfo       map[string]string   `json:"user_info"`
+	CallStack      []map[string]string `json:"call_stack"`
+	SuperAccountId string              `json:"super_account_id"`
 	jwt.StandardClaims
 }
 
 type MyClaimsForChainRequest struct {
-	AccountId string              `json:"account_id"`
-	SubOrgKey string              `json:"sub_org_key"`
-	UserInfo  map[string]string   `json:"user_info"`
-	CallStack []map[string]string `json:"call_stack"`
+	AccountId      string              `json:"account_id"`
+	SubOrgKey      string              `json:"sub_org_key"`
+	UserInfo       map[string]string   `json:"user_info"`
+	CallStack      []map[string]string `json:"call_stack"`
+	SuperAccountId string              `json:"super_account_id"`
 	jwt.StandardClaims
 }

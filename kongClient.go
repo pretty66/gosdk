@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -42,6 +43,8 @@ type kongClient struct {
 	consumer        string
 	secret          []byte
 	token           string // 本次请求需要传递过去的token
+	superAccountId  string
+	sw              sync.Mutex
 }
 
 func NewKongClient(header http.Header) (Client, error) {
@@ -119,6 +122,7 @@ func (c *kongClient) parseClaims() error {
 	c.accountId = c.server.GetAccountId()
 	c.subOrgKey = c.server.GetSubOrgKey()
 	c.baseAccountInfo = c.server.GetUserInfo()
+	c.superAccountId = c.server.GetSuperAdmin()
 	return nil
 }
 
@@ -172,6 +176,14 @@ func (c *kongClient) SetService(proxyUrl string) *kongClient {
 		c.proxy = proxyUrl
 	}
 	return c
+}
+
+func (c *kongClient) SetAsSuperAdmin() {
+	c.superAccountId = SUPER_ADMIN_ACCOUNT_ID
+}
+
+func (c *kongClient) GetSuperAdmin() string {
+	return c.server.GetSuperAdmin()
 }
 
 func (client *kongClient) SetUserInfo(userInfo map[string]string) error {
@@ -242,13 +254,14 @@ func (c *kongClient) getSigner() *jwt.SigningMethodHMAC {
 // 组合token数据
 func (c *kongClient) claimsForThisRequest() MyClaimsForRequest {
 	return MyClaimsForRequest{
-		FromAppid:   c.currentInfo.appId,
-		FromAppkey:  c.currentInfo.appKey,
-		FromChannel: c.currentInfo.channel,
-		Alias:       c.targetInfo.alias,
-		AccountId:   c.accountId,
-		SubOrgKey:   c.subOrgKey,
-		UserInfo:    c.baseAccountInfo,
+		FromAppid:      c.currentInfo.appId,
+		FromAppkey:     c.currentInfo.appKey,
+		FromChannel:    c.currentInfo.channel,
+		Alias:          c.targetInfo.alias,
+		AccountId:      c.accountId,
+		SubOrgKey:      c.subOrgKey,
+		UserInfo:       c.baseAccountInfo,
+		SuperAccountId: c.superAccountId,
 		CallStack: append(c.callStacks, map[string]string{
 			"appid":   c.targetInfo.appId,
 			"appkey":  c.targetInfo.appKey,
@@ -275,11 +288,14 @@ func (c *kongClient) MakeToken(claims MyClaimsForRequest, expire int64) string {
 // 生成一个指定时间过期的token
 func (c *kongClient) ReInitCurrentTokenWithSeconds(seconds int64) string {
 	claims := MyClaimsForRequest{
-		Appid:     c.currentInfo.appId,
-		Appkey:    c.currentInfo.appKey,
-		Channel:   c.currentInfo.channel,
-		SubOrgKey: c.subOrgKey,
-		CallStack: c.callStacks,
+		Appid:          c.currentInfo.appId,
+		Appkey:         c.currentInfo.appKey,
+		Channel:        c.currentInfo.channel,
+		SubOrgKey:      c.subOrgKey,
+		AccountId:      c.accountId,
+		SuperAccountId: c.superAccountId,
+		UserInfo:       c.baseAccountInfo,
+		CallStack:      c.callStacks,
 	}
 	return c.MakeToken(claims, seconds)
 }

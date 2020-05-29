@@ -16,6 +16,7 @@ type body struct {
 }
 
 var _cacheInstance *Cache
+
 /**
  * tic: 多久清除一次缓存
  */
@@ -26,6 +27,13 @@ func NewCache(isClear bool, tic int) *Cache {
 		if isClear && tic > 0 {
 			go _cacheInstance.clearExpireKey(tic)
 		}
+	}
+	return _cacheInstance
+}
+
+func Instance() *Cache {
+	if _cacheInstance == nil {
+		return NewCache(false, 0)
 	}
 	return _cacheInstance
 }
