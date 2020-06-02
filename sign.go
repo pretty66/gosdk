@@ -2,6 +2,7 @@ package gosdk
 
 import (
 	"encoding/json"
+	"github.com/dgrijalva/jwt-go"
 )
 
 func MakeService(appId, appKey, channel string) string {
@@ -24,8 +25,11 @@ func MakeSecret(fromAppId, fromAppKey, fromChannel string) string {
 	return NewImplodeMd5("__", fromAppId, fromAppKey, fromChannel)
 }
 
-
 func MakeChains(chains []chain) string {
 	b, _ := json.Marshal(chains)
 	return NewMd5(string(b))
+}
+
+func GetSigner() *jwt.SigningMethodHMAC {
+	return jwt.SigningMethodHS256
 }

@@ -247,10 +247,6 @@ func (c *kongClient) makeUrlForInstance(targetAppId, targetAppKey, targetChannel
 	return c.proxy + "/" + route + "/" + api
 }
 
-func (c *kongClient) getSigner() *jwt.SigningMethodHMAC {
-	return jwt.SigningMethodHS256
-}
-
 // 组合token数据
 func (c *kongClient) claimsForThisRequest() MyClaimsForRequest {
 	return MyClaimsForRequest{
@@ -280,7 +276,7 @@ func (c *kongClient) MakeToken(claims MyClaimsForRequest, expire int64) string {
 	claims.Issuer = c.consumer
 	claims.IssuedAt = now
 	claims.NotBefore = now
-	token := jwt.NewWithClaims(c.getSigner(), claims)
+	token := jwt.NewWithClaims(GetSigner(), claims)
 	result, _ := token.SignedString(c.secret)
 	return result
 }
@@ -643,7 +639,7 @@ func (client *kongClient) SetToken(tokenString string) error {
 	if tokenIssuer == client.consumer {
 		isTokenIssuer = true
 	}
-	if isTokenIssuer && getSigner().Verify(tokenString, token.Signature, client.secret) == nil {
+	if isTokenIssuer && GetSigner().Verify(tokenString, token.Signature, client.secret) == nil {
 		/*originClaims := token.Claims.(jwt.MapClaims)
 		claims := make(map[string]interface{})
 		for k, v := range originClaims {

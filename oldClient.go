@@ -174,7 +174,7 @@ func (client *oldClient) SetToken(tokenString string) error {
 	if tokenIssuer == ISS {
 		isTokenIssuer = true
 	}
-	if isTokenIssuer && getSigner().Verify(tokenString, token.Signature, client.appSecret) == nil {
+	if isTokenIssuer && GetSigner().Verify(tokenString, token.Signature, client.appSecret) == nil {
 		/*originClaims := token.Claims.(jwt.MapClaims)
 		claims := make(map[string]interface{})
 		for k, v := range originClaims {
@@ -190,10 +190,6 @@ func (client *oldClient) SetToken(tokenString string) error {
 		return err
 	}
 	return nil
-}
-
-func getSigner() *jwt.SigningMethodHMAC {
-	return jwt.SigningMethodHS256
 }
 
 func (client *oldClient) SetSubOrgKey(subOrgKey string) error {
@@ -366,7 +362,7 @@ func (client *oldClient) makeToken(claims MyClaimsForRequest) {
 
 func (client oldClient) MakeToken(claims MyClaimsForRequest, expire int64) string {
 	claims.ExpiresAt = time.Now().Unix() + expire
-	token := jwt.NewWithClaims(getSigner(), claims)
+	token := jwt.NewWithClaims(GetSigner(), claims)
 	result, _ := token.SignedString([]byte(client.getAppSecret()))
 	return result
 }

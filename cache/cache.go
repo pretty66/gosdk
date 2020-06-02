@@ -75,19 +75,31 @@ func (this *Cache) Get(key string) string {
 	return ""
 }
 
-func (this *Cache) GetAll() map[string]string {
+func (this *Cache) GetAll(limit int) map[string]map[string]string {
 	this.sw.RLock()
 	defer this.sw.RUnlock()
-
 	now := time.Now().Unix()
-	out := make(map[string]string)
+	out := make(map[string]map[string]string)
+	if limit <= 0 {
+		limit = 200
+	}
+
 	for k, v := range this.data {
+		if len(out) >= limit {
+			break
+		}
 		if v.Expire == -1 {
-			out[k] = v.Val
+			out[k] = map[string]string{
+				"data":   v.Val,
+				"expire": time.Unix(v.Expire, 0).Format("2006-01-02 15:04:05"),
+			}
 			continue
 		}
 		if now < v.Expire {
-			out[k] = v.Val
+			out[k] = map[string]string{
+				"data":   v.Val,
+				"expire": time.Unix(v.Expire, 0).Format("2006-01-02 15:04:05"),
+			}
 			continue
 		}
 		go this.Delete(k)
