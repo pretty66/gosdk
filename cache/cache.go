@@ -88,17 +88,21 @@ func (this *Cache) GetAll(limit int) map[string]map[string]string {
 		if len(out) >= limit {
 			break
 		}
+		expire := "0"
+		if v.Expire > 0 {
+			expire = time.Unix(v.Expire, 0).Format("2006-01-02 15:04:05")
+		}
 		if v.Expire == -1 {
 			out[k] = map[string]string{
 				"data":   v.Val,
-				"expire": time.Unix(v.Expire, 0).Format("2006-01-02 15:04:05"),
+				"expire": expire,
 			}
 			continue
 		}
 		if now < v.Expire {
 			out[k] = map[string]string{
 				"data":   v.Val,
-				"expire": time.Unix(v.Expire, 0).Format("2006-01-02 15:04:05"),
+				"expire": expire,
 			}
 			continue
 		}
@@ -127,6 +131,9 @@ func (this *Cache) clearExpireKey(tic int) {
 	for range ticker.C {
 		now := time.Now().Unix()
 		for key, val := range this.data {
+			if val.Expire <= 0 {
+				continue
+			}
 			if val.Expire < now {
 				this.Delete(key)
 			}
