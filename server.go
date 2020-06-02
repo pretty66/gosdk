@@ -62,15 +62,23 @@ func (server *Server) GetTokenData() (map[string]interface{}, error) {
 	}
 
 	server.tokenData = make(map[string]interface{})
-	claims, err := server.token.Claims.(jwt.MapClaims)
-	if err {
+	claims, ok := server.token.Claims.(jwt.MapClaims)
+	if ok {
 		for key, value := range claims {
-			server.tokenData[key] = value
+			switch key {
+			case CALL_STACK_KEY:
+				server.tokenData[key] = server.GetCallStack()
+			case FROM_CHANNEL_KEY, TO_CHANNEL:
+				server.tokenData[key] = GetInterfaceString(value)
+			case USER_INFO_KEY:
+				server.tokenData[key] = server.GetUserInfo()
+			default:
+				server.tokenData[key] = value
+			}
 		}
 	} else {
 		return nil, errno.TOKEN_INVALID
 	}
-
 	return server.tokenData, nil
 }
 
@@ -218,8 +226,12 @@ func (server *Server) GetCallStack() []map[string]string {
 	return []map[string]string{}
 }
 
-func (s *Server) GetToken() string {
+func (s *Server) GetTokenString() string {
 	return s.token.Raw
+}
+
+func (s *Server) GetTokenPoint() *jwt.Token {
+	return s.token
 }
 
 func (s *Server) GetFirstChain() map[string]string {
